@@ -209,6 +209,9 @@ extension PythonLibrary {
 
         if pythonLibraryHandle != nil {
             self.log("Library at '\(path)' was successfully loaded.")
+        } else {
+            let errorString = String(cString: UnsafePointer(dlerror()))
+            self.log("dlopen error: \(errorString)")
         }
         return pythonLibraryHandle
     }
@@ -283,19 +286,16 @@ extension PythonLibrary {
             return Environment.keyPrefix + Environment.keySeparator + rawValue
         }
 
+        private static var valueDict: [String: String] = [:]
         var value: String? {
-            guard let cString = getenv(key) else { return nil }
-            let value = String(cString: cString)
-            guard !value.isEmpty else { return nil }
-            return value
+            if let val = PythonLibrary.Environment.valueDict[key] {
+                return val;
+            }
+            return ""
         }
 
         func set(_ value: String) {
-#if os(Windows)
-            _putenv_s(key, value)
-#else
-            setenv(key, value, 1)
-#endif
+            PythonLibrary.Environment.valueDict[key] = value
         }
     }
 }
